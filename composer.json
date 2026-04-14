@@ -1,0 +1,37 @@
+{
+    "name": "pedropessutto/api-bancos",
+    "description": "Biblioteca para integração com APIs bancárias",
+    "keywords": [
+        "pedropessutto",
+        "api-bancos"
+    ],
+    "homepage": "https://github.com/pedropessutto/api-bancos",
+    "authors": [
+        {
+            "name": "Pedro Pessutto",
+            "email": "pedrospessutto@gmail.com"
+        }
+    ],
+    "require": {
+        "php": ">=8.0"
+    },
+    "require-dev": {
+    },
+    "autoload": {
+        "psr-4": {
+            "PedroPessutto\\ApiBancos\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "PedroPessutto\\ApiBancos\\Tests\\": "tests"
+        }
+    },
+    "config": {
+        "allow-plugins": true
+    },
+    "scripts": {
+        "php-cs-fixer-check": "vendor/bin/php-cs-fixer fix --diff --verbose --dry-run",
+        "php-cs-fixer": "vendor/bin/php-cs-fixer fix --verbose"
+    }
+}
