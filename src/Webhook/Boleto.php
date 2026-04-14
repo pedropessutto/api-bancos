@@ -4,12 +4,12 @@ namespace PedroPessutto\ApiBancos\Webhook;
 
 use Exception;
 use Carbon\Carbon;
+use Eduardokum\LaravelBoleto\MagicTrait as LaravelBoletoMagicTrait;
 use PedroPessutto\ApiBancos\Util;
-use PedroPessutto\ApiBancos\MagicTrait;
 
 class Boleto
 {
-    use MagicTrait;
+    use LaravelBoletoMagicTrait;
 
     const OCORRENCIA_LIQUIDADA = 1;
     const OCORRENCIA_BAIXADA = 2;

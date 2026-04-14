@@ -12,10 +12,15 @@
             "email": "pedrospessutto@gmail.com"
         }
     ],
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/pedropessutto/laravel-boleto"
+        }
+    ],
     "require": {
-        "php": ">=8.0"
-    },
-    "require-dev": {
+        "php": "^8.1",
+        "eduardokum/laravel-boleto": "dev-master"
     },
     "autoload": {
         "psr-4": {
@@ -33,5 +38,7 @@
     "scripts": {
         "php-cs-fixer-check": "vendor/bin/php-cs-fixer fix --diff --verbose --dry-run",
         "php-cs-fixer": "vendor/bin/php-cs-fixer fix --verbose"
-    }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
 }

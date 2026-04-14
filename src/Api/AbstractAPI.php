@@ -2,20 +2,17 @@
 
 namespace PedroPessutto\ApiBancos\Api;
 
+use Eduardokum\LaravelBoleto\Pessoa as LaravelBoletoPessoa;
 use stdClass;
 use Illuminate\Support\Str;
 use PedroPessutto\ApiBancos\Util;
-use PedroPessutto\ApiBancos\Pessoa;
-use PedroPessutto\ApiBancos\Contracts\Api\Api;
 use PedroPessutto\ApiBancos\Api\Exception\CurlException;
 use PedroPessutto\ApiBancos\Api\Exception\HttpException;
-use PedroPessutto\ApiBancos\Exception\ValidationException;
 use PedroPessutto\ApiBancos\Api\Exception\MissingDataException;
 use PedroPessutto\ApiBancos\Contracts\Pessoa as PessoaContract;
 use PedroPessutto\ApiBancos\Api\Exception\UnauthorizedException;
-use PedroPessutto\ApiBancos\Contracts\Boleto\BoletoAPI as BoletoAPIContract;
 
-abstract class AbstractAPI implements Api
+abstract class AbstractAPI
 {
     protected $baseUrl = null;
 
@@ -103,46 +100,11 @@ abstract class AbstractAPI implements Api
 
     abstract protected function headers();
 
-    abstract public function createBoleto(BoletoAPIContract $boleto);
+    abstract protected function oAuth2();
 
-    abstract public function retrieveNossoNumero($nossoNumero);
-
-    abstract public function retrieveID($id);
-
-    abstract public function cancelNossoNumero($nossoNumero, $motivo);
-
-    abstract public function cancelID($id, $motivo);
-
-    abstract public function retrieveList($inputedParams = []);
-
-    abstract public function getPdfNossoNumero($nossoNumero);
-
-    abstract public function getPdfID($id);
-
-    /**
-     * @param $url
-     * @param $type
-     * @return mixed
-     * @throws ValidationException
-     */
-    public function createWebhook($url, $type = 'all')
+    public function authenticate()
     {
-        throw new ValidationException('Método não disponível no banco');
-    }
-
-    public function retrieve(BoletoAPIContract $boleto)
-    {
-        return $this->retrieveNossoNumero($boleto->getNossoNumero());
-    }
-
-    public function cancel(BoletoAPIContract $boleto, $motivo)
-    {
-        return $this->cancelNossoNumero($boleto->getNossoNumero(), $motivo);
-    }
-
-    public function getPdf(BoletoAPIContract $boleto)
-    {
-        return $this->getPdfNossoNumero($boleto->getNossoNumero());
+        return $this->oAuth2();
     }
 
     /**
@@ -360,7 +322,7 @@ abstract class AbstractAPI implements Api
      */
     public function getBeneficiario()
     {
-        return is_array($this->beneficiario) || is_null($this->beneficiario) ? new Pessoa() : $this->beneficiario;
+        return is_array($this->beneficiario) || is_null($this->beneficiario) ? new LaravelBoletoPessoa() : $this->beneficiario;
     }
 
     /**

@@ -2,13 +2,13 @@
 
 namespace PedroPessutto\ApiBancos\Webhook;
 
-use PedroPessutto\ApiBancos\MagicTrait;
-use PedroPessutto\ApiBancos\Contracts\Webhook\Webhook;
+use Eduardokum\LaravelBoleto\MagicTrait as LaravelBoletoMagicTrait;
+use Eduardokum\LaravelBoleto\Contracts\Webhook\Webhook as LaravelBoletoWebhook;
 use PedroPessutto\ApiBancos\Exception\ValidationException;
 
-abstract class AbstractWebhook implements Webhook
+abstract class AbstractWebhook implements LaravelBoletoWebhook
 {
-    use MagicTrait;
+    use LaravelBoletoMagicTrait;
 
     /**
      * @var array
