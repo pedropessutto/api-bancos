@@ -2,13 +2,19 @@
 
 namespace PedroPessutto\ApiBancos\Contracts;
 use Eduardokum\LaravelBoleto\Contracts\Pessoa as PessoaContract;
+use Carbon\Carbon;
 
 interface Pix
 {
     const COD_BANCO_BB = '001';
 
     /**
-     * @return mixed
+     * @return string
+     */
+    public function getTransactionId(); // txid
+
+    /**
+     * @return Carbon
      */
     public function getExpiresAt();
 
@@ -18,17 +24,22 @@ interface Pix
     public function getDevedor();
 
     /**
-     * @return mixed
+     * @return float
      */
     public function getValor();
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getChave();
 
     /**
-     * @return mixed
+     * @return string
+     */
+    public function getTipoChave();
+
+    /**
+     * @return string
      */
     public function getDescricao();
 
