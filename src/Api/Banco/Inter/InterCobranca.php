@@ -15,15 +15,37 @@ class InterCobranca extends AbstractCobranca
 {
     protected InterClient $client;
 
+    protected $camposObrigatorios = [
+        'conta',
+        'certificado',
+        'certificadoChave',
+    ];
+
+    protected $baseUrl = 'https://apis.bancointer.com.br';
+
     public function __construct($params = [])
     {
-        $this->client = new InterClient($params);
-        parent::__construct([]);
+        $this->client = new InterClient(array_merge($params, [
+            'scope' => 'boleto-cobranca.read boleto-cobranca.write',
+        ]));
+
+        if (in_array($this->client->getVersion(), [2, 3])) {
+            $this->baseUrl = 'https://cdpj.partners.bancointer.com.br';
+          
+            $this->camposObrigatorios = [
+                'certificado',
+                'certificadoChave',
+                'client_id',
+                'client_secret',
+            ];
+        }
+
+        parent::__construct($params);
     }
 
     protected function oAuth2()
     {
-        return $this->client->authenticate();
+        return $this->client->oAuth2();
     }
 
     protected function headers()
@@ -37,7 +59,7 @@ class InterCobranca extends AbstractCobranca
             throw new ValidationException('Somente versão 2 e 3 da API permite criação de webhooks');
         }
         try {
-            $this->client->authenticate()->requestPut($this->client->url('webhook'), ['webhookUrl' => $url]);
+            $this->authenticate()->requestPut($this->client->getBaseUrl() . $this->url('webhook'), ['webhookUrl' => $url]);
             return true;
         } catch (Exception $e) {
             return false;
@@ -64,10 +86,10 @@ class InterCobranca extends AbstractCobranca
             unset($data['desconto']['codigoDesconto'], $data['desconto1']);
         }
 
-        $retorno = $this->client->authenticate()->requestPost($this->client->url('create'), $data);
+        $retorno = $this->authenticate()->requestPost($this->url('create'), $data);
 
         if ($this->client->getVersion() == 3) {
-            $retorno = $this->client->authenticate()->requestGet($this->client->url('show', $retorno->body->codigoCobranca));
+            $retorno = $this->authenticate()->requestGet($this->url('show', $retorno->body->codigoCobranca));
             $boleto->setID($retorno->body->codigoCobranca);
             $boleto->setNossoNumero($retorno->body->boleto->nossoNumero);
             $boleto->setPixQrCode($retorno->body->pix->pixCopiaECola);
@@ -100,7 +122,7 @@ class InterCobranca extends AbstractCobranca
         $aRetorno = [];
         if (in_array($version, [1, 2])) {
             do {
-                $retorno = $this->client->authenticate()->requestGet($this->client->url('search') . http_build_query($params));
+                $retorno = $this->authenticate()->requestGet($this->url('search') . http_build_query($params));
                 array_push($aRetorno, ...$retorno->body->content);
                 if ($version == 1) {
                     $params['page'] += 1;
@@ -110,7 +132,7 @@ class InterCobranca extends AbstractCobranca
             } while (! $retorno->body->last);
         } else {
             do {
-                $retorno = $this->client->authenticate()->requestGet($this->client->url('search') . http_build_query($params));
+                $retorno = $this->authenticate()->requestGet($this->url('search') . http_build_query($params));
                 array_push($aRetorno, ...$retorno->body->cobrancas);
                 $params['paginacao']['paginaAtual'] += 1;
             } while (! $retorno->body->ultimaPagina);
@@ -125,7 +147,7 @@ class InterCobranca extends AbstractCobranca
         if ($version == 3) {
             throw new ValidationException('Versão 3 da API somente recupera boleto pelo ID da cobrança');
         }
-        $response = $this->client->authenticate()->requestGet($this->client->url('show', $nossoNumero));
+        $response = $this->authenticate()->requestGet($this->url('show', $nossoNumero));
         return $version == 1 ? $response : $response->body;
     }
 
@@ -134,7 +156,7 @@ class InterCobranca extends AbstractCobranca
         if ($this->client->getVersion() != 3) {
             throw new ValidationException('Versão 1 e 2 da API somente recupera boleto pelo nosso número');
         }
-        return $this->client->authenticate()->requestGet($this->client->url('show', $id))->body;
+        return $this->authenticate()->requestGet($this->url('show', $id))->body;
     }
 
     public function cancelNossoNumero($nossoNumero, $motivo = 'ACERTOS')
@@ -165,8 +187,8 @@ class InterCobranca extends AbstractCobranca
             $motivo = 'ACERTOS';
         }
 
-        return $this->client->authenticate()->requestPost(
-            $this->client->url('cancel', $nossoNumero),
+        return $this->authenticate()->requestPost(
+            $this->url('cancel', $nossoNumero),
             $version == 1 ? ['codigoBaixa' => $motivo] : ['motivoCancelamento' => $motivo]
         )->body;
     }
@@ -176,7 +198,7 @@ class InterCobranca extends AbstractCobranca
         if ($this->client->getVersion() != 3) {
             throw new ValidationException('Versão 1 e 2 da API somente cancela boleto pelo nosso número');
         }
-        return $this->client->authenticate()->requestPost($this->client->url('cancel', $id), ['motivoCancelamento' => $motivo])->body;
+        return $this->authenticate()->requestPost($this->url('cancel', $id), ['motivoCancelamento' => $motivo])->body;
     }
 
     public function getPdfNossoNumero($nossoNumero)
@@ -184,7 +206,7 @@ class InterCobranca extends AbstractCobranca
         if ($this->client->getVersion() == 3) {
             throw new ValidationException('Versão 3 da API somente recupera PDF pelo ID da cobrança');
         }
-        return $this->client->authenticate()->requestGet($this->client->url('pdf', $nossoNumero))->body;
+        return $this->authenticate()->requestGet($this->url('pdf', $nossoNumero))->body;
     }
 
     public function getPdfID($id)
@@ -192,7 +214,7 @@ class InterCobranca extends AbstractCobranca
         if ($this->client->getVersion() == 3) {
             throw new ValidationException('Versão 1, 2 da API somente recupera PDF pelo nosso número');
         }
-        return $this->client->authenticate()->requestGet($this->client->url('pdf', $id))->body;
+        return $this->authenticate()->requestGet($this->url('pdf', $id))->body;
     }
 
     private function arrayToBoleto($boleto)
@@ -201,5 +223,38 @@ class InterCobranca extends AbstractCobranca
             'conta'        => $this->client->getConta(),
             'beneficiario' => $this->client->getBeneficiario(),
         ]);
+    }
+
+    public function url($type, $param = null)
+    {
+        $aUrls = [
+            1 => [
+                'create' => 'openbanking/v1/certificado/boletos',
+                'show'   => 'openbanking/v1/certificado/boletos/' . $param,
+                'cancel' => 'openbanking/v1/certificado/boletos/' . $param . '/baixas',
+                'pdf'    => 'openbanking/v1/certificado/boletos/' . $param . '/pdf',
+                'search' => 'openbanking/v1/certificado/boletos?',
+            ],
+            2 => [
+                'create'  => 'cobranca/v2/boletos',
+                'show'    => 'cobranca/v2/boletos/' . $param,
+                'cancel'  => 'cobranca/v2/boletos/' . $param . '/cancelar',
+                'pdf'     => 'cobranca/v2/boletos/' . $param . '/pdf',
+                'search'  => 'cobranca/v2/boletos?',
+                'auth'    => '/oauth/v2/token',
+                'webhook' => 'cobranca/v2/boletos/webhook',
+            ],
+            3 => [
+                'create'  => 'cobranca/v3/cobrancas',
+                'show'    => 'cobranca/v3/cobrancas/' . $param,
+                'cancel'  => 'cobranca/v3/cobrancas/' . $param . '/cancelar',
+                'pdf'     => 'cobranca/v3/cobrancas/' . $param . '/pdf',
+                'search'  => 'cobranca/v3/cobrancas?',
+                'auth'    => '/oauth/v2/token',
+                'webhook' => 'cobranca/v3/cobrancas/webhook',
+            ],
+        ];
+
+        return Arr::get($aUrls, "{$this->client->getVersion()}.$type");
     }
 }

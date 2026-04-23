@@ -3,6 +3,7 @@
 namespace PedroPessutto\ApiBancos\Api;
 
 use Eduardokum\LaravelBoleto\Pessoa as LaravelBoletoPessoa;
+use Illuminate\Support\Facades\Cache;
 use stdClass;
 use Illuminate\Support\Str;
 use PedroPessutto\ApiBancos\Util;
@@ -30,11 +31,25 @@ abstract class AbstractAPI
 
     protected $client_secret = null;
 
+    protected $scope = null;
+
+    protected $agencia = null;
+
+    protected $posto = null;
+
+    protected $codigo_acesso_beneficiario = null;
+
+    protected $beneficiario_numero = null;
+
+    protected $api_token = null;
+
     protected $senha = null;
 
     protected $cnpj = null;
 
     protected $access_token = null;
+
+    protected $refresh_token = null;
 
     protected $debug = false;
 
@@ -70,7 +85,7 @@ abstract class AbstractAPI
     ];
 
     /**
-     * AbstractBoleto constructor.
+     * AbstractAPI constructor.
      *
      * @param array $params
      *
@@ -104,6 +119,7 @@ abstract class AbstractAPI
 
     public function authenticate()
     {
+        // Caso necessário, sobrescrever este método para implementar a autenticação individual de cada banco
         return $this->oAuth2();
     }
 
@@ -300,8 +316,133 @@ abstract class AbstractAPI
     /**
      * @return null
      */
+    public function getScope()
+    {
+        return $this->scope;
+    }
+
+    /**
+     * @param null $scope
+     *
+     * @return AbstractAPI
+     */
+    public function setScope($scope)
+    {
+        $this->scope = $scope;
+
+        return $this;
+    }
+
+    /**
+     * @return null
+     */
+    public function getAgencia()
+    {
+        return $this->agencia;
+    }
+
+    /**
+     * @param null $agencia
+     *
+     * @return AbstractAPI
+     */
+    public function setAgencia($agencia)
+    {
+        $this->agencia = $agencia;
+
+        return $this;
+    }
+
+    /**
+     * @return null
+     */
+    public function getPosto()
+    {
+        return $this->posto;
+    }
+
+    /**
+     * @param null $posto
+     *
+     * @return AbstractAPI
+     */
+    public function setPosto($posto)
+    {
+        $this->posto = $posto;
+
+        return $this;
+    }
+
+    /**
+     * @return null
+     */
+    public function getCodigoAcessoBeneficiario()
+    {
+        return $this->codigo_acesso_beneficiario;
+    }
+
+    /**
+     * @param null $codigo_acesso_beneficiario
+     *
+     * @return AbstractAPI
+     */
+    public function setCodigoAcessoBeneficiario($codigo_acesso_beneficiario)
+    {
+        $this->codigo_acesso_beneficiario = $codigo_acesso_beneficiario;
+
+        return $this;
+    }
+
+    /**
+     * @return null
+     */
+    public function getBeneficiarioNumero()
+    {
+        return $this->beneficiario_numero;
+    }
+
+    /**
+     * @param null $beneficiario_numero
+     *
+     * @return AbstractAPI
+     */
+    public function setBeneficiarioNumero($beneficiario_numero)
+    {
+        $this->beneficiario_numero = $beneficiario_numero;
+
+        return $this;
+    }
+
+    /**
+     * @return null
+     */
+    public function getApiToken()
+    {
+        return $this->api_token;
+    }
+
+    /**
+     * @param null $api_token
+     *
+     * @return AbstractAPI
+     */
+    public function setApiToken($api_token)
+    {
+        $this->api_token = $api_token;
+        return $this;
+    }
+
+    /**
+     * @return null
+     */
     public function getAccessToken()
     {
+        $accessTokenCache = Cache::get($this->getAccessTokenCacheKey());
+
+        if ($accessTokenCache) {
+            return $accessTokenCache;
+        }
+
         return $this->access_token;
     }
 
@@ -310,9 +451,45 @@ abstract class AbstractAPI
      *
      * @return AbstractAPI
      */
-    public function setAccessToken($access_token)
+    public function setAccessToken($access_token, $expires_in = null)
     {
         $this->access_token = $access_token;
+        $this->access_token = ltrim($this->access_token, 'Bearer ');
+        $this->access_token = 'Bearer ' . $this->access_token;
+
+        if ($expires_in > 0 && $this->getAccessTokenCacheKey()) {
+            Cache::put($this->getAccessTokenCacheKey(), $this->access_token, $expires_in);
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return null
+     */
+    public function getRefreshToken()
+    {
+        $refreshTokenCache = Cache::get($this->getRefreshTokenCacheKey());
+
+        if ($refreshTokenCache) {
+            return $refreshTokenCache;
+        }
+
+        return $this->refresh_token;
+    }
+
+    /**
+     * @param null $refresh_token
+     *
+     * @return AbstractAPI
+     */
+    public function setRefreshToken($refresh_token, $expires_in = null)
+    {
+        $this->refresh_token = $refresh_token;
+
+        if ($expires_in > 0 && $this->getRefreshTokenCacheKey()) {
+            Cache::put($this->getRefreshTokenCacheKey(), $this->refresh_token, $expires_in);
+        }
 
         return $this;
     }

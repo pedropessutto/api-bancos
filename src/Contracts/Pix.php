@@ -43,4 +43,9 @@ interface Pix
      */
     public function getDescricao();
 
+    /**
+     * @return array
+     */
+    public function pixToArray();
+
 }

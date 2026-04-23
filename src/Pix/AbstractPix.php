@@ -23,10 +23,10 @@ abstract class AbstractPix implements PixContract
 {
     use MagicTrait;
 
-    const SITUACAO_ATIVO = 'ativo';
-    const SITUACAO_CONCLUIDO = 'concluido';
-    const SITUACAO_CANCELADO_USUARIO = 'cancelado_usuario';
-    const SITUACAO_CANCELADO_BANCO = 'cancelado_banco';
+    const SITUACAO_ATIVA = 'ativa';
+    const SITUACAO_CONCLUIDA = 'concluida';
+    const SITUACAO_CANCELADA = 'cancelada';
+    const SITUACAO_EXPIRADA = 'expirada';
 
     const TIPO_CHAVEPIX_CPF = 'cpf';
     const TIPO_CHAVEPIX_CNPJ = 'cnpj';
@@ -36,8 +36,6 @@ abstract class AbstractPix implements PixContract
     
     const QRCODE_ESTILO_QUADRADO = 'square';
     const QRCODE_ESTILO_PONTO = 'dot';
-    
-    // TODO - ajustar restante da classe
 
     /**
      * Campos necessários para o pix
@@ -88,6 +86,13 @@ abstract class AbstractPix implements PixContract
      * @var float
      */
     public $chave;
+
+    /**
+     * Chave copia e cola
+     *
+     * @var string
+     */
+    public $pixCopiaECola;
 
     /**
      * Tipo da chave do pix
@@ -368,6 +373,30 @@ abstract class AbstractPix implements PixContract
     public function getChave()
     {
         return $this->chave;
+    }
+
+    /**
+     * Define a chave copia e cola do pix
+     *
+     * @param string $pixCopiaECola
+     *
+     * @return AbstractPix
+     */
+    public function setPixCopiaECola($pixCopiaECola)
+    {
+        $this->pixCopiaECola = $pixCopiaECola;
+
+        return $this;
+    }
+
+    /**
+     * Retorna a chave copia e cola do pix
+     *
+     * @return string
+     */
+    public function getPixCopiaECola()
+    {
+        return $this->pixCopiaECola;
     }
 
     /**
@@ -655,56 +684,58 @@ abstract class AbstractPix implements PixContract
         return true;
     }
 
-    // /**
-    //  * @return ?string
-    //  */
-    // public function getQrCodeBase64()
-    // {
-    //     if ($this->getQrCode() == null) {
-    //         return null;
-    //     }
-    //     if (Util::isBase64($this->getPixQrCode())) {
-    //         return 'data://text/plain;base64,' . $this->getPixQrCode();
-    //     }
+    /**
+     * @return ?string
+     */
+    public function getQrCodeBase64()
+    {
+        if (! $this->getPixCopiaECola()) {
+            return null;
+        }
+    
+        // já é data URI
+        if (Str::startsWith($this->getPixCopiaECola(), 'data:image')) {
+            return $this->getPixCopiaECola();
+        }
 
-    //     if (Str::startsWith($this->getPixQrCode(), 'data:')) {
-    //         return $this->getPixQrCode();
-    //     }
+        $options = new QROptions();
 
-    //     $options = new QROptions;
+        if (defined('\chillerlan\QRCode\QRCode::OUTPUT_IMAGE_PNG')) {
+            $options->outputType = QRCode::OUTPUT_IMAGE_PNG;
+            $options->eccLevel = QRCode::ECC_L;
+        } else {
+            $options->outputType = QROutputInterface::GDIMAGE_PNG;
+            $options->addQuietzone = true;
+            $options->eccLevel = QRCode::ECC_H; // melhor leitura
+        }
 
-    //     if (defined('\chillerlan\QRCode\QRCode::OUTPUT_IMAGE_PNG')) {
-    //         $options->outputType = QRCode::OUTPUT_IMAGE_PNG;
-    //         $options->eccLevel = QRCode::ECC_L;
-    //     } else {
-    //         $options->outputType = QROutputInterface::GDIMAGE_PNG;
-    //         $options->addQuietzone = true;
-    //     }
+        $options->scale = 10;
+        $options->quietzoneSize = 2;
+        $options->drawLightModules = false;
 
-    //     $options->scale = 20;
-    //     $options->quietzoneSize = 1;
-    //     $options->drawLightModules = false;
+        if ($this->getQrCodeStyle() == self::QRCODE_ESTILO_PONTO) {
+            $options->drawCircularModules = true;
+            $options->circleRadius = 0.5;
+            $options->keepAsSquare = [
+                QRMatrix::M_FINDER_DOT,
+                QRMatrix::M_FINDER_DARK,
+            ];
+        }
 
-    //     if ($this->getQrCodeStyle() == self::QRCODE_ESTILO_PONTO) {
-    //         $options->drawCircularModules = true;
-    //         $options->circleRadius = .5;
-    //         $options->keepAsSquare = [
-    //             QRMatrix::M_FINDER_DOT,
-    //             QRMatrix::M_FINDER_DARK,
-    //         ];
-    //     }
-    //     $qrCode = new QRCode($options);
+        $qrCode = new QRCode($options);
 
-    //     return $qrCode->render($this->getPixQrCode());
-    // }
+        $image = $qrCode->render($this->getPixCopiaECola());
 
-    // /**
-    //  * @param string $pixQrCode
-    //  */
-    // public function setPixQrCode($pixQrCode)
-    // {
-    //     $this->pixQrCode = $pixQrCode;
-    // }
+        return 'data:image/png;base64,' . base64_encode($image);
+    }
+
+    /**
+     * @param string $pixQrCode
+     */
+    public function setPixQrCode($pixQrCode)
+    {
+        $this->pixQrCode = $pixQrCode;
+    }
     
     /**
      * @param $situacao
@@ -721,7 +752,7 @@ abstract class AbstractPix implements PixContract
      */
     public function isCancelado()
     {
-        return $this->isSituacao(self::SITUACAO_CANCELADO_USUARIO) || $this->isSituacao(self::SITUACAO_CANCELADO_BANCO);
+        return $this->isSituacao(self::SITUACAO_CANCELADA);
     }
 
     /**
@@ -729,7 +760,7 @@ abstract class AbstractPix implements PixContract
      */
     public function isAtivo()
     {
-        return $this->isSituacao(self::SITUACAO_ATIVO);
+        return $this->isSituacao(self::SITUACAO_ATIVA);
     }
 
     /**
@@ -737,7 +768,7 @@ abstract class AbstractPix implements PixContract
      */
     public function isConcluido()
     {
-        return $this->isSituacao(self::SITUACAO_CONCLUIDO);
+        return $this->isSituacao(self::SITUACAO_CONCLUIDA);
     }
 
     /**
@@ -813,17 +844,11 @@ abstract class AbstractPix implements PixContract
             'created_at'            => $this->getCreatedAt(),
             'devedor'               => [
                 'nome'              => $this->getDevedor()->getNome(),
-                'endereco'          => $this->getDevedor()->getEndereco(),
-                'bairro'            => $this->getDevedor()->getBairro(),
-                'cep'               => $this->getDevedor()->getCep(),
-                'uf'                => $this->getDevedor()->getUf(),
+                'endereco'          => $this->getDevedor()->getEnderecoCompleto(),
                 'cidade'            => $this->getDevedor()->getCidade(),
-                'documento'         => $this->getDevedor()->getDocumento(),
-                'nome_documento'    => $this->getDevedor()->getNomeDocumento(),
-                'endereco2'         => $this->getDevedor()->getCepCidadeUf(),
-                'endereco_completo' => $this->getDevedor()->getEnderecoCompleto(),
-                'fone'              => $this->getDevedor()->getFone(),
-                'email'             => $this->getDevedor()->getEmail(),
+                'uf'                => $this->getDevedor()->getUf(),
+                'cep'               => $this->getDevedor()->cpf,
+                'cpf'               => $this->getDevedor()->getCpf(),
             ],
             // 'qrcode'                => $this->getQrCode(),
             // 'qrcode_image'          => $this->getQrCodeBase64(),

@@ -15,8 +15,11 @@ class BBCobranca extends AbstractCobranca
 
     public function __construct($params = [])
     {
-        $this->client = new BBClient($params);
-        parent::__construct([]);
+        $this->client = new BBClient(array_merge($params, [
+            'scope' => 'cobrancas.boletos-info cobrancas.boletos-requisicao',
+        ]));
+
+        parent::__construct($params);
     }
 
     protected function oAuth2()

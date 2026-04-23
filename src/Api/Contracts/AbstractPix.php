@@ -3,33 +3,41 @@
 namespace PedroPessutto\ApiBancos\Api\Contracts;
 
 use PedroPessutto\ApiBancos\Api\AbstractApi;
+use PedroPessutto\ApiBancos\Contracts\Pix as PixContract;
+use PedroPessutto\ApiBancos\Exception\ValidationException;
 
 abstract class AbstractPix extends AbstractApi
 {
     protected $camposObrigatorios = [];
 
-    // /**
-    //  * Cria uma cobrança Pix (imediata ou com vencimento)
-    //  */
-    // abstract public function criarCobranca(array $dados);
+    abstract public function createPix(PixContract $pix, string $transactionId = null);
 
-    // /**
-    //  * Consulta uma cobrança pelo id
-    //  */
-    // abstract public function consultarCobranca(string $id);
+    abstract public function retrieveTransactionId(string $transactionId);
 
-    // /**
-    //  * Lista cobranças com filtros
-    //  */
-    // abstract public function listarCobrancas(array $filtros = []);
+    abstract public function updateTransactionId(string $transactionId, PixContract $pix);
 
-    // /**
-    //  * Gera QR Code (ou retorna payload EMV)
-    //  */
-    // abstract public function gerarQrCode(string $id);
+    abstract public function deleteTransactionId(string $transactionId);
+    
+    abstract public function qrCodePix(PixContract $pix);
 
-    // /**
-    //  *  Cancelar / remover cobrança
-    //  */
-    // abstract public function cancelarCobranca(string $id);
+    public function retrieve(PixContract $pix)
+    {
+        return $this->retrieveTransactionId($pix->getTransactionId());
+    }   
+
+    public function update(PixContract $pix)
+    {
+        return $this->updateTransactionId($pix->getTransactionId(), $pix);
+    }
+
+    public function delete(PixContract $pix)
+    {
+        return $this->deleteTransactionId($pix->getTransactionId());
+    }
+
+    // TODO - Implementar
+    // public function createWebhook($url, $type = 'all')
+    // {
+    //     throw new ValidationException('Método não disponível no banco');
+    // }
 }

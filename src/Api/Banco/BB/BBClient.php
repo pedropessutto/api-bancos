@@ -8,49 +8,35 @@ use PedroPessutto\ApiBancos\Exception\ValidationException;
 
 class BBClient extends BancoClient
 {
-    protected $gw_dev_app_key;
-
-    protected $convenio_numero;
-
     protected $camposObrigatorios = [
         'client_id',
         'client_secret',
-        'gw_dev_app_key',
-        'convenio_numero',
+        'scope',
     ];
-
-    public function getGwDevAppKey()
-    {
-        return $this->gw_dev_app_key;
-    }
-
-    public function getConvenioNumero()
-    {
-        return $this->convenio_numero;
-    }
 
     protected function oAuth2()
     {
-        $accessTokenCache = Cache::get($this->getAccessTokenCacheKey());
-
-        if ($accessTokenCache) {
-            return $this->setAccessToken('Bearer ' . $accessTokenCache);
+        if ($this->getAccessToken()) {
+            return $this;
         }
 
-        $response = $this->requestPost('https://oauth.bb.com.br/oauth/token', [
+        // Homologação
+        $response = $this->requestPost('https://oauth.hm.bb.com.br/oauth/token', [
             'grant_type' => 'client_credentials',
-            'scope'      => 'cobrancas.boletos-info cobrancas.boletos-requisicao',
+            'scope'      => $this->getScope(),
         ], true)->body;
+
+        // Produção
+        // $response = $this->requestPost('https://oauth.bb.com.br/oauth/token', [
+        //     'grant_type' => 'client_credentials',
+        //     'scope'      => $this->getScope(),
+        // ], true)->body;
 
         if (! isset($response->access_token)) {
             throw new ValidationException('Erro ao localizar access token');
         }
 
-        if (isset($response->expires_in)) {
-            Cache::put($this->getAccessTokenCacheKey(), $response->access_token, $response->expires_in);
-        }
-
-        return $this->setAccessToken('Bearer ' . $response->access_token);
+        return $this->setAccessToken($response->access_token, $response->expires_in ?? 0);
     }
 
     protected function headers()

@@ -20,67 +20,42 @@ class SicrediClient extends BancoClient
         'codigo_acesso_beneficiario',
         'beneficiario_numero',
         'api_token',
+        'scope',
     ];
-
-    public function getAgencia()
-    {
-        return $this->agencia;
-    }
-
-    public function getPosto()
-    {
-        return $this->posto;
-    }
-
-    public function getCodigoAcessoBeneficiario()
-    {
-        return $this->codigo_acesso_beneficiario;
-    }
-
-    public function getBeneficiarioNumero()
-    {
-        return $this->beneficiario_numero;
-    }
-
-    public function getApiToken()
-    {
-        return $this->api_token;
-    }
 
     protected function oAuth2()
     {
-        $url = 'https://api-parceiro.sicredi.com.br/auth/openapi/token';
-        $refreshTokenCache = Cache::get($this->getRefreshTokenCacheKey());
+        if ($this->getAccessToken()) {
+            return $this;
+        }
 
-        if ($refreshTokenCache) {
+        if ($this->getRefreshToken()) {
             $body = [
                 'grant_type'    => 'refresh_token',
-                'refresh_token' => $refreshTokenCache,
+                'refresh_token' => $this->getRefreshToken(),
+                'scope'         => $this->getScope(),
             ];
-        } else {
+        }
+        else {
             $body = [
                 'grant_type' => 'password',
                 'username'   => $this->getBeneficiarioNumero() . $this->getAgencia(),
                 'password'   => $this->getCodigoAcessoBeneficiario(),
-                'scope'      => 'cobranca',
+                'scope'      => $this->getScope(),
             ];
         }
 
-        $response = $this->requestPost($url, $body, true)->body;
-
-        if (isset($response->refresh_token) && isset($response->refresh_expires_in)) {
-            Cache::put($this->getRefreshTokenCacheKey(), $response->refresh_token, $response->refresh_expires_in);
-        }
+        $response = $this->requestPost('https://api-parceiro.sicredi.com.br/auth/openapi/token', $body, true)->body;
 
         if (! isset($response->access_token)) {
             throw new ValidationException('Erro ao localizar access token');
         }
 
-        if (isset($response->expires_in)) {
-            Cache::put($this->getAccessTokenCacheKey(), $response->access_token, $response->expires_in);
+        if (isset($response->refresh_token) && isset($response->refresh_expires_in)) {
+            $this->setRefreshToken($response->refresh_token, $response->refresh_expires_in);
         }
 
-        return $this->setAccessToken('Bearer ' . $response->access_token);
+        return $this->setAccessToken($response->access_token, $response->expires_in ?? 0);
     }
 
     protected function headers()

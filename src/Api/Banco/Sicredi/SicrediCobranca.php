@@ -4,6 +4,7 @@ namespace PedroPessutto\ApiBancos\Api\Banco\Sicredi;
 
 use PedroPessutto\ApiBancos\Api\Contracts\AbstractCobranca;
 use Eduardokum\LaravelBoleto\Contracts\Boleto\BoletoAPI as BoletoAPIContract;
+use Illuminate\Support\Arr;
 
 class SicrediCobranca extends AbstractCobranca
 {
@@ -13,13 +14,16 @@ class SicrediCobranca extends AbstractCobranca
 
     public function __construct($params = [])
     {
-        $this->client = new SicrediClient($params);
-        parent::__construct([]);
+        $this->client = new SicrediClient(array_merge($params, [
+            'scope' => 'cobranca',
+        ]));
+        
+        parent::__construct($params);
     }
 
     protected function oAuth2()
     {
-        return $this->client->authenticate();
+        return $this->client->oAuth2();
     }
 
     protected function headers()
@@ -29,16 +33,12 @@ class SicrediCobranca extends AbstractCobranca
 
     public function cancelNossoNumero($nossoNumero, $motivo = null)
     {
-        $this->client->authenticate();
-
-        return $this->client->requestPatch("{$nossoNumero}/baixa", [])->body;
+        return $this->authenticate()->requestPatch($this->url('baixa', $nossoNumero), [])->body;
     }
 
     public function cancelNossoNumeroProtesto($nossoNumero)
     {
-        $this->client->authenticate();
-
-        return $this->client->requestPatch("{$nossoNumero}/sustar-protesto-baixar-titulo", [])->body;
+        return $this->authenticate()->requestPatch($this->url('sustar-protesto-baixar-titulo', $nossoNumero), [])->body;
     }
 
     public function createBoleto(BoletoAPIContract $boleto)
@@ -74,5 +74,17 @@ class SicrediCobranca extends AbstractCobranca
     public function getPdfID($id)
     {
         // TODO: Implement getPdfID() method.
+    }
+
+    public function url($type, $param = null)
+    {
+        $aUrls = [
+            1 => [
+                'baixa' => $param . '/baixa',
+                'sustar-protesto-baixar-titulo' => $param . '/sustar-protesto-baixar-titulo',
+            ]
+        ];
+
+        return Arr::get($aUrls, "{$this->client->getVersion()}.$type");
     }
 }
