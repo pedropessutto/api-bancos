@@ -13,7 +13,7 @@ use PedroPessutto\ApiBancos\Api\Exception\MissingDataException;
 use PedroPessutto\ApiBancos\Contracts\Pessoa as PessoaContract;
 use PedroPessutto\ApiBancos\Api\Exception\UnauthorizedException;
 
-abstract class AbstractAPI
+abstract class AbstractApi
 {
     protected $baseUrl = null;
 
@@ -637,7 +637,11 @@ abstract class AbstractAPI
             return Util::normalizeChars($data);
         }, $post);
 
-        curl_setopt($this->curl, CURLOPT_URL, $this->getBaseUrl() . $url);
+        if ( ! Str::startsWith($url, 'http')) {
+            $url = $this->getBaseUrl() . $url;
+        }
+
+        curl_setopt($this->curl, CURLOPT_URL, $url);
         curl_setopt($this->curl, CURLOPT_POST, 1);
         curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'POST');
         curl_setopt($this->curl, CURLOPT_POSTFIELDS, $raw ? http_build_query($post) : json_encode($post));
@@ -664,7 +668,11 @@ abstract class AbstractAPI
             return Util::normalizeChars($data);
         }, $post);
 
-        curl_setopt($this->curl, CURLOPT_URL, $this->getBaseUrl() . $url);
+        if ( ! Str::startsWith($url, 'http')) {
+            $url = $this->getBaseUrl() . $url;
+        }
+
+        curl_setopt($this->curl, CURLOPT_URL, $url);
         curl_setopt($this->curl, CURLOPT_POST, 1);
         curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'PUT');
         curl_setopt($this->curl, CURLOPT_POSTFIELDS, $raw ? http_build_query($post) : json_encode($post));
@@ -691,7 +699,11 @@ abstract class AbstractAPI
             return Util::normalizeChars($data);
         }, $post);
 
-        curl_setopt($this->curl, CURLOPT_URL, $this->getBaseUrl() . $url);
+        if ( ! Str::startsWith($url, 'http')) {
+            $url = $this->getBaseUrl() . $url;
+        }
+
+        curl_setopt($this->curl, CURLOPT_URL, $url);
         curl_setopt($this->curl, CURLOPT_POST, 1);
         curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'PATCH');
         curl_setopt($this->curl, CURLOPT_POSTFIELDS, $raw ? http_build_query($post) : json_encode($post));
@@ -715,7 +727,11 @@ abstract class AbstractAPI
                 'Accept' => 'application/json',
             ]);
 
-        curl_setopt($this->curl, CURLOPT_URL, $this->getBaseUrl() . $url);
+        if ( ! Str::startsWith($url, 'http')) {
+            $url = $this->getBaseUrl() . $url;
+        }
+
+        curl_setopt($this->curl, CURLOPT_URL, $url);
         curl_setopt($this->curl, CURLOPT_CUSTOMREQUEST, 'GET');
 
         return $this->execute();
@@ -744,8 +760,12 @@ abstract class AbstractAPI
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, true);
         curl_setopt($curl, CURLOPT_HEADER, 1);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-        curl_setopt($curl, CURLOPT_SSLCERT, $this->getCertificado());
-        curl_setopt($curl, CURLOPT_SSLKEY, $this->getCertificadoChave());
+        if ($certificado = $this->getCertificado()) {
+            curl_setopt($curl, CURLOPT_SSLCERT, $certificado);
+        }
+        if ($certificadoChave = $this->getCertificadoChave()) {
+            curl_setopt($curl, CURLOPT_SSLKEY, $certificadoChave);
+        }
         if ($senha = $this->getCertificadoSenha()) {
             curl_setopt($curl, CURLOPT_KEYPASSWD, $senha);
         }

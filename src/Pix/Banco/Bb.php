@@ -65,19 +65,25 @@ class Bb extends AbstractPix implements PixContract
 
     public function pixToArray()
     {
-        return array_filter([
-            'expires_at' => $this->getExpiresAt(),
-            'created_at' => $this->getCreatedAt(),
-            'devedor' => [
-                // 'email' => $this->getDevedor()->getEmail(),
-                // 'logradouro' => $this->getDevedor()->getEnderecoCompleto(),
-                // 'cidade' => $this->getDevedor()->getCidade(),
-                // 'uf' => $this->getDevedor()->getUf(),
-                // 'cep' => $this->getDevedor()->getCep(),
+        if ($this->getDevedor()) {
+            $devedor = [
                 'cpf' => Util::onlyNumbers($this->getDevedor()->getDocumento()),
                 'cnpj' => Util::onlyNumbers($this->getDevedor()->getDocumento()),
                 'nome' => $this->getDevedor()->getNome(),
-            ],
+            ];
+        }
+        else {
+            $devedor = [
+                'cpf' => null,
+                'cnpj' => null,
+                'nome' => null,
+            ];
+        }
+
+        return array_filter([
+            'expires_at' => $this->getExpiresAt(),
+            'created_at' => $this->getCreatedAt(),
+            'devedor' => $devedor,
             'valor' => [
                 'original' => $this->getValor(),
                 'modalidadeAlteracao' => 0,
