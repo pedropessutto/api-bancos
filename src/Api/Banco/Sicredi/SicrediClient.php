@@ -63,7 +63,7 @@ class SicrediClient extends BancoClient
         return $this->getAccessToken()
             ? [
                 'x-api-key'          => $this->getApiToken(),
-                'Authorization'      => $this->getAccessToken(),
+                'Authorization'      => 'Bearer ' . $this->getAccessToken(),
                 'Content-Type'       => 'application/json',
                 'cooperativa'        => $this->getAgencia(),
                 'posto'              => $this->getPosto(),

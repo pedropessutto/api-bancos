@@ -8,10 +8,15 @@ use PedroPessutto\ApiBancos\Exception\ValidationException;
 
 class BBClient extends BancoClient
 {
+    protected $version = 2;
+
     protected $camposObrigatorios = [
         'client_id',
         'client_secret',
         'scope',
+        'certificado',
+        'certificadoChave',
+        'certificadoSenha',
     ];
 
     protected function oAuth2()
@@ -43,12 +48,17 @@ class BBClient extends BancoClient
     {
         return $this->getAccessToken()
             ? [
-                'Authorization' => $this->getAccessToken(),
+                'Authorization' => 'Bearer ' . $this->getAccessToken(),
                 'Content-Type'  => 'application/json',
             ]
             : [
                 'Authorization' => 'Basic ' . base64_encode($this->getClientId() . ':' . $this->getClientSecret()),
                 'Content-Type'  => 'application/x-www-form-urlencoded',
             ];
+    }
+
+    public function getVersion()
+    {
+        return $this->version;
     }
 }

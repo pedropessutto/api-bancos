@@ -455,7 +455,6 @@ abstract class AbstractApi
     {
         $this->access_token = $access_token;
         $this->access_token = ltrim($this->access_token, 'Bearer ');
-        $this->access_token = 'Bearer ' . $this->access_token;
 
         if ($expires_in > 0 && $this->getAccessTokenCacheKey()) {
             Cache::put($this->getAccessTokenCacheKey(), $this->access_token, $expires_in);
@@ -629,7 +628,7 @@ abstract class AbstractApi
         $this->init()
             ->setHeaders(array_filter([
                 'Accept'       => $raw ? null : 'application/json',
-                'Content-type' => $raw ? 'application/x-www-form-urlencoded' : 'application/json',
+                'Content-Type' => $raw ? 'application/x-www-form-urlencoded' : 'application/json',
             ]));
 
         // clean string
@@ -660,7 +659,7 @@ abstract class AbstractApi
         $this->init()
             ->setHeaders(array_filter([
                 'Accept'       => $raw ? null : 'application/json',
-                'Content-type' => $raw ? 'application/x-www-form-urlencoded' : 'application/json',
+                'Content-Type' => $raw ? 'application/x-www-form-urlencoded' : 'application/json',
             ]));
 
         // clean string
@@ -691,7 +690,7 @@ abstract class AbstractApi
         $this->init()
             ->setHeaders(array_filter([
                 'Accept'       => $raw ? null : 'application/json',
-                'Content-type' => $raw ? 'application/x-www-form-urlencoded' : 'application/json',
+                'Content-Type' => $raw ? 'application/x-www-form-urlencoded' : 'application/json',
             ]));
 
         // clean string
@@ -742,16 +741,18 @@ abstract class AbstractApi
      */
     private function init()
     {
-        if ($this->getCertificado()
-            && ! file_exists($this->getCertificado())
-            && openssl_x509_read($this->getCertificado())) {
-            $this->setCertificado($this->tempFile($this->getCertificado()));
+        $cert = $this->getCertificado();
+        $key  = $this->getCertificadoChave();
+    
+        // Se for conteúdo (não path), transforma em arquivo
+        if ($cert && !file_exists($cert)) {
+            $cert = $this->tempFile($cert);
+            $this->setCertificado($cert);
         }
-
-        if ($this->getCertificadoChave()
-            && ! file_exists($this->getCertificadoChave())
-            && openssl_pkey_get_private($this->getCertificadoChave())) {
-            $this->setCertificadoChave($this->tempFile($this->getCertificadoChave()));
+    
+        if ($key && !file_exists($key)) {
+            $key = $this->tempFile($key);
+            $this->setCertificadoChave($key);
         }
 
         $curl = curl_init();
@@ -760,19 +761,24 @@ abstract class AbstractApi
         curl_setopt($curl, CURLOPT_SSL_VERIFYPEER, true);
         curl_setopt($curl, CURLOPT_HEADER, 1);
         curl_setopt($curl, CURLOPT_RETURNTRANSFER, 1);
-        if ($certificado = $this->getCertificado()) {
-            curl_setopt($curl, CURLOPT_SSLCERT, $certificado);
+    
+        if ($cert) {
+            curl_setopt($curl, CURLOPT_SSLCERT, $cert);
         }
-        if ($certificadoChave = $this->getCertificadoChave()) {
-            curl_setopt($curl, CURLOPT_SSLKEY, $certificadoChave);
+    
+        if ($key) {
+            curl_setopt($curl, CURLOPT_SSLKEY, $key);
         }
+
         if ($senha = $this->getCertificadoSenha()) {
             curl_setopt($curl, CURLOPT_KEYPASSWD, $senha);
         }
+    
         curl_setopt($curl, CURLOPT_CAPATH, '/etc/ssl/certs/');
         curl_setopt($curl, CURLOPT_CUSTOMREQUEST, 'POST');
+    
         $this->curl = $curl;
-
+    
         return $this;
     }
 

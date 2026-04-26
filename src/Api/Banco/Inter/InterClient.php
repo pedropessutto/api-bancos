@@ -47,7 +47,7 @@ class InterClient extends BancoClient
     {
         if ($this->version != 1) {
             return array_filter([
-                'Authorization' => $this->getAccessToken(),
+                'Authorization' => 'Bearer ' . $this->getAccessToken(),
             ]);
         }
 

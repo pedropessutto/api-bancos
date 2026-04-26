@@ -41,7 +41,7 @@ class BBPix extends AbstractPix
         unset($data['txid']);
         unset($data['pixCopiaECola']);
 
-        return $this->authenticate()->post($this->url('create', $transactionId), $data)->body;
+        return $this->authenticate()->put($this->url('create', $transactionId), $data)->body;
     }
 
     public function retrieveTransactionId(string $transactionId)
@@ -63,13 +63,12 @@ class BBPix extends AbstractPix
 
     public function qrCodePix(PixContract $pix)
     {
-        dd($pix, $this->getQrCodeBase64());
         $this->getQrCodeBase64();
     }
 
     protected function headers()
     {
-        return [];
+        return $this->client->headers();
     }
 
     private function url($type, $param = null)
@@ -83,6 +82,6 @@ class BBPix extends AbstractPix
             ]
         ];
 
-        return Arr::get($aUrls, "{$this->client->getVersion()}.$type");
+        return $this->getBaseUrl() . Arr::get($aUrls, "{$this->client->getVersion()}.$type");
     }
 }
