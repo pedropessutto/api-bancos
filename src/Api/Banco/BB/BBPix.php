@@ -12,12 +12,22 @@ class BBPix extends AbstractPix
 {
     protected BBClient $client;
 
-    protected $baseUrl = 'https://api-pix.bb.com.br/pix/v2';
+    // protected $baseUrl = 'https://api-pix.hm.bb.com.br/pix/v2'; // Homologação
+    protected $baseUrl = 'https://api-pix.bb.com.br/pix/v2'; // Produção
 
     public function __construct($params = [])
     {
         $this->client = new BBClient(array_merge($params, [
-            'scope' => 'pix-bb.read pix.write pix.read',
+            'scope' => implode(' ', [
+                'cob.read', 'cob.write',
+                'cobr.read', 'cobr.write', 
+                'cobv.read', 'cobv.write',
+                'lotecobv.read', 'lotecobv.write',
+                'webhook.read', 'webhook.write',
+                'webhookcobr.read', 'webhookcobr.write',
+                'pix-bb.read', 'pix-bb.write',
+                'pix.read', 'pix.write',
+            ]),
         ]));
 
         parent::__construct($params);
@@ -35,6 +45,10 @@ class BBPix extends AbstractPix
         $data['calendario'] = [
             'expiracao' => Carbon::now()->diffInSeconds($pix->getExpiresAt())
         ];
+
+        if ($data['devedor'] == []) {
+            unset($data['devedor']);
+        }
 
         unset($data['expires_at']);
         unset($data['created_at']);
@@ -82,6 +96,8 @@ class BBPix extends AbstractPix
             ]
         ];
 
-        return $this->getBaseUrl() . Arr::get($aUrls, "{$this->client->getVersion()}.$type");
+        $path = Arr::get($aUrls, "{$this->client->getVersion()}.$type");
+        
+        return $this->getBaseUrl() . $path . (str_contains($path, '?') ? '&' : '?') . 'gw-dev-app-key=' . $this->client->getApiToken();
     }
 }

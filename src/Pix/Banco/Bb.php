@@ -55,9 +55,9 @@ class Bb extends AbstractPix implements PixContract
             'descricao' => $pix['solicitacaoPagador'],
             'pixCopiaECola' => $pix['pixCopiaECola'],
             'devedor' => [
-                'nome' => $pix['devedor']['nome'],
-                'cpf' => Util::onlyNumbers($pix['devedor']['cpf']),
-                'cnpj' => Util::onlyNumbers($pix['devedor']['cnpj']),
+                'nome' => $pix['devedor']['nome'] ?? null,
+                'cpf' => isset($pix['devedor']['cpf']) ? Util::onlyNumbers($pix['devedor']['cpf']) : null,
+                'cnpj' => isset($pix['devedor']['cnpj']) ? Util::onlyNumbers($pix['devedor']['cnpj']) : null,
             ],
             'situacao' => $situacao,
         ]), $appends));
@@ -65,19 +65,16 @@ class Bb extends AbstractPix implements PixContract
 
     public function pixToArray()
     {
+        $devedor = [];
+       
         if ($this->getDevedor()) {
-            $devedor = [
-                'cpf' => Util::onlyNumbers($this->getDevedor()->getDocumento()),
-                'cnpj' => Util::onlyNumbers($this->getDevedor()->getDocumento()),
-                'nome' => $this->getDevedor()->getNome(),
-            ];
-        }
-        else {
-            $devedor = [
-                'cpf' => null,
-                'cnpj' => null,
-                'nome' => null,
-            ];
+            if (strlen($cpf = Util::onlyNumbers($this->getDevedor()->getDocumento())) == 11) {
+                $devedor['cpf'] = $cpf;
+            } else {
+                $devedor['cnpj'] = Util::onlyNumbers($this->getDevedor()->getDocumento());
+            }
+
+            $devedor['nome'] = $this->getDevedor()->getNome();
         }
 
         return array_filter([

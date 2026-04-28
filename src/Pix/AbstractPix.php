@@ -709,6 +709,7 @@ abstract class AbstractPix implements PixContract
             $options->eccLevel = QRCode::ECC_H; // melhor leitura
         }
 
+        $options->outputType = QROutputInterface::GDIMAGE_PNG;
         $options->scale = 10;
         $options->quietzoneSize = 2;
         $options->drawLightModules = false;
@@ -726,7 +727,7 @@ abstract class AbstractPix implements PixContract
 
         $image = $qrCode->render($this->getPixCopiaECola());
 
-        return 'data:image/png;base64,' . base64_encode($image);
+        return $image;
     }
 
     /**

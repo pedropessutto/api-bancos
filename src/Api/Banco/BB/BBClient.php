@@ -13,6 +13,7 @@ class BBClient extends BancoClient
     protected $camposObrigatorios = [
         'client_id',
         'client_secret',
+        'api_token',
         'scope',
         'certificado',
         'certificadoChave',
@@ -26,16 +27,16 @@ class BBClient extends BancoClient
         }
 
         // Homologação
-        $response = $this->requestPost('https://oauth.hm.bb.com.br/oauth/token', [
-            'grant_type' => 'client_credentials',
-            'scope'      => $this->getScope(),
-        ], true)->body;
-
-        // Produção
-        // $response = $this->requestPost('https://oauth.bb.com.br/oauth/token', [
+        // $response = $this->requestPost('https://oauth.hm.bb.com.br/oauth/token', [
         //     'grant_type' => 'client_credentials',
         //     'scope'      => $this->getScope(),
         // ], true)->body;
+
+        // Produção
+        $response = $this->requestPost('https://oauth.bb.com.br/oauth/token', [
+            'grant_type' => 'client_credentials',
+            'scope'      => $this->getScope(),
+        ], true)->body;
 
         if (! isset($response->access_token)) {
             throw new ValidationException('Erro ao localizar access token');
