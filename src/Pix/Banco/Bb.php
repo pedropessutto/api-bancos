@@ -3,6 +3,7 @@
 namespace PedroPessutto\ApiBancos\Pix\Banco;
 
 use Carbon\Carbon;
+use Eduardokum\LaravelBoleto\Pessoa;
 use Illuminate\Support\Arr;
 use PedroPessutto\ApiBancos\Pix\AbstractPix;
 use PedroPessutto\ApiBancos\Contracts\Pix as PixContract;
@@ -29,9 +30,17 @@ class Bb extends AbstractPix implements PixContract
 
     public static function fromAPI($pix, $appends = [])
     {
-        $createdAt = Carbon::parse($pix['calendario']['criacao']);
+        $pixData = json_decode(json_encode($pix), true);
+
+        $devedor = new Pessoa([
+            'nome' => isset($pixData['devedor']['nome']) ? $pixData['devedor']['nome'] : null,
+            'cpf' => isset($pixData['devedor']['cpf']) ? Util::onlyNumbers($pixData['devedor']['cpf']) : null,
+            'cnpj' => isset($pixData['devedor']['cnpj']) ? Util::onlyNumbers($pixData['devedor']['cnpj']) : null,
+        ]);
+
+        $createdAt = Carbon::parse($pixData['calendario']['criacao']);
         $expiresAt = clone $createdAt;
-        $expiresAt->addSeconds($pix['calendario']['expiracao']);
+        $expiresAt->addSeconds($pixData['calendario']['expiracao']);
 
         $aSituacao = [
             'ATIVA' => AbstractPix::SITUACAO_ATIVA,
@@ -40,7 +49,7 @@ class Bb extends AbstractPix implements PixContract
             'REMOVIDA_PELO_PSP' => AbstractPix::SITUACAO_CANCELADA,
         ];
 
-        $situacao = Arr::get($aSituacao, $pix['status'], $pix['status']);
+        $situacao = Arr::get($aSituacao, $pixData['status'], $pixData['status']);
 
         if ($expiresAt->isPast() && $situacao != AbstractPix::SITUACAO_CONCLUIDA) {
             $situacao = AbstractPix::SITUACAO_EXPIRADA;
@@ -49,16 +58,12 @@ class Bb extends AbstractPix implements PixContract
         return new self(array_merge(array_filter([
             'expiresAt' => $expiresAt,
             'createdAt' => $createdAt,
-            'transactionId' => $pix['txid'],
-            'valor' => $pix['valor']['original'],
-            'chave' => $pix['chave'],
-            'descricao' => $pix['solicitacaoPagador'],
-            'pixCopiaECola' => $pix['pixCopiaECola'],
-            'devedor' => [
-                'nome' => $pix['devedor']['nome'] ?? null,
-                'cpf' => isset($pix['devedor']['cpf']) ? Util::onlyNumbers($pix['devedor']['cpf']) : null,
-                'cnpj' => isset($pix['devedor']['cnpj']) ? Util::onlyNumbers($pix['devedor']['cnpj']) : null,
-            ],
+            'transactionId' => $pixData['txid'],
+            'valor' => $pixData['valor']['original'],
+            'chave' => $pixData['chave'],
+            'descricao' => $pixData['solicitacaoPagador'],
+            'pixCopiaECola' => $pixData['pixCopiaECola'],
+            'devedor' => $devedor,
             'situacao' => $situacao,
         ]), $appends));
     }

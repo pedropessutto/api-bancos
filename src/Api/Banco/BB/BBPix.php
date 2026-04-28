@@ -46,16 +46,12 @@ class BBPix extends AbstractPix
             'expiracao' => Carbon::now()->diffInSeconds($pix->getExpiresAt())
         ];
 
-        if ($data['devedor'] == []) {
-            unset($data['devedor']);
-        }
-
         unset($data['expires_at']);
         unset($data['created_at']);
         unset($data['txid']);
         unset($data['pixCopiaECola']);
 
-        return $this->authenticate()->put($this->url('create', $transactionId), $data)->body;
+        return $this->authenticate()->put($this->url('create', $transactionId), $data);
     }
 
     public function retrieveTransactionId(string $transactionId)
