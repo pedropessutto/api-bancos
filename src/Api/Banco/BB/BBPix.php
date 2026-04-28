@@ -81,6 +81,11 @@ class BBPix extends AbstractPix
         return $this->client->headers();
     }
 
+    public function clearCache()
+    {
+        $this->client->clearCache();
+    }
+
     private function url($type, $param = null)
     {
         $aUrls = [

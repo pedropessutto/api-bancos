@@ -124,6 +124,17 @@ abstract class AbstractApi
     }
 
     /**
+     * Limpa o cache de tokens
+     *
+     * @return void
+     */
+    public function clearCache()
+    {
+        $this->setAccessToken(null);
+        $this->setRefreshToken(null);
+    }
+
+    /**
      * Get API Base URL
      *
      * @return string|null
