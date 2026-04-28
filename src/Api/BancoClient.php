@@ -2,6 +2,8 @@
 
 namespace PedroPessutto\ApiBancos\Api;
 
+use Illuminate\Support\Facades\Cache;
+
 abstract class BancoClient extends AbstractApi
 {
     public function __construct($params = [])
@@ -20,21 +22,57 @@ abstract class BancoClient extends AbstractApi
 
     public function requestPost($url, array $body, $raw = false)
     {
-        return $this->post($url, $body, $raw);
+        return $this->retry(fn() => $this->post($url, $body, $raw));
     }
 
     public function requestPut($url, array $body, $raw = false)
     {
-        return $this->put($url, $body, $raw);
+        return $this->retry(fn() => $this->put($url, $body, $raw));
     }
 
     public function requestPatch($url, array $body, $raw = false)
     {
-        return $this->patch($url, $body, $raw);
+        return $this->retry(fn() => $this->patch($url, $body, $raw));
     }
 
     public function requestGet($url)
     {
-        return $this->get($url);
+        return $this->retry(fn() => $this->get($url));
+    }
+
+    private function retry(callable $callback)
+    {
+        $tentativas = 0;
+        $max = 3;
+
+        do {
+            try {
+                return $callback();
+            } catch (\Throwable $e) {
+                $tentativas++;
+
+                $mensagem = strtolower($e->getMessage());
+
+                $isAuthError =
+                    str_contains($mensagem, '401') ||
+                    str_contains($mensagem, 'unauthorized') ||
+                    str_contains($mensagem, 'credencial invalida') ||
+                    str_contains($mensagem, 'nao autorizado');
+
+                if ($isAuthError && $tentativas < $max) {
+                    Cache::forget($this->access_token_cache_key);
+                    Cache::forget($this->refresh_token_cache_key);
+
+                    $this->setAccessToken(null);
+                    $this->setRefreshToken(null);
+                    continue;
+                }
+
+                throw $e;
+            }
+
+        } while ($tentativas < $max);
+
+        throw new \Exception('Falha após múltiplas tentativas');
     }
 }

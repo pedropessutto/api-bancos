@@ -456,8 +456,10 @@ abstract class AbstractApi
         $this->access_token = $access_token;
         $this->access_token = ltrim($this->access_token, 'Bearer ');
 
+        Cache::forget($this->getAccessTokenCacheKey());
+
         if ($expires_in > 0 && $this->getAccessTokenCacheKey()) {
-            Cache::put($this->getAccessTokenCacheKey(), $this->access_token, $expires_in);
+            Cache::put($this->getAccessTokenCacheKey(), $this->access_token, $expires_in * 0.5);
         }
 
         return $this;
@@ -486,8 +488,10 @@ abstract class AbstractApi
     {
         $this->refresh_token = $refresh_token;
 
+        Cache::forget($this->getRefreshTokenCacheKey());
+
         if ($expires_in > 0 && $this->getRefreshTokenCacheKey()) {
-            Cache::put($this->getRefreshTokenCacheKey(), $this->refresh_token, $expires_in);
+            Cache::put($this->getRefreshTokenCacheKey(), $this->refresh_token, $expires_in * 0.5);
         }
 
         return $this;
