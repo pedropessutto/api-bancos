@@ -22,11 +22,11 @@ class BBPix extends AbstractPix
                 'cob.read', 'cob.write',
                 'cobr.read', 'cobr.write', 
                 'cobv.read', 'cobv.write',
-                'lotecobv.read', 'lotecobv.write',
-                'webhook.read', 'webhook.write',
-                'webhookcobr.read', 'webhookcobr.write',
-                'pix-bb.read', 'pix-bb.write',
-                'pix.read', 'pix.write',
+                // 'lotecobv.read', 'lotecobv.write',
+                // 'webhook.read', 'webhook.write',
+                // 'webhookcobr.read', 'webhookcobr.write',
+                // 'pix-bb.read', 'pix-bb.write',
+                // 'pix.read', 'pix.write',
             ]),
         ]));
 
